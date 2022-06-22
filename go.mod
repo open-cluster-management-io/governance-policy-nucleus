@@ -1,3 +1,3 @@
 module open-cluster-management.io/governance-policy-nucleus
 
-go 1.17
+go 1.18
