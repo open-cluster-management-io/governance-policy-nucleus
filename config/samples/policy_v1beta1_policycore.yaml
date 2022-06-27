@@ -3,4 +3,5 @@ kind: PolicyCore
 metadata:
   name: policycore-sample
 spec:
+  foo: hello world
   # TODO(user): Add fields here

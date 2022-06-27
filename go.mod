@@ -2,10 +2,7 @@ module open-cluster-management.io/governance-policy-nucleus
 
 go 1.18
 
-require (
-	k8s.io/apimachinery v0.24.2
-	sigs.k8s.io/controller-runtime v0.12.2
-)
+require k8s.io/apimachinery v0.24.2
 
 require (
 	github.com/go-logr/logr v1.2.0 // indirect
@@ -22,4 +19,5 @@ require (
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
+	sigs.k8s.io/yaml v1.3.0 // indirect
 )
