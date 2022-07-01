@@ -1,0 +1,39 @@
+name: Validation
+
+on: [push, pull_request]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  basic:
+    name: generate and vet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: './go.mod'
+
+      - run: |
+          make generate
+          make manifests
+          go mod tidy
+          make fmt
+          make vet
+          git diff --exit-code
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: './go.mod'
+
+      - run: |
+          make test
