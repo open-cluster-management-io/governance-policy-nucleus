@@ -1,0 +1,11 @@
+extends: relaxed
+
+ignore: |
+  .go/
+
+rules:
+  colons: enable
+  empty-values: enable
+  hyphens: enable
+  line-length: disable
+  octal-values: enable

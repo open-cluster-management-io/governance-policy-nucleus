@@ -40,6 +40,10 @@ KUSTOMIZE ?= $(LOCAL_BIN)/kustomize
 $(KUSTOMIZE): $(LOCAL_BIN)
 	$(call go-install,sigs.k8s.io/kustomize/kustomize/v4@v4.5.5)
 
+GOLANGCI ?= $(LOCAL_BIN)/golangci-lint
+$(GOLANGCI): $(LOCAL_BIN)
+	$(call go-install,github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2)
+
 .PHONY: manifests
 manifests: $(CONTROLLER_GEN) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
@@ -56,7 +60,15 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+# Note: this target is not used by Github Actions. Instead, each linter is run 
+# separately to automatically decorate the code with the linting errors.
+# Note: this target will fail if yamllint is not installed.
+.PHONY: lint
+lint: $(GOLANGCI)
+	$(GOLANGCI) run
+	yamllint .
+
 # ENVTEST_K8S_VERSION = 1.23
 .PHONY: test
-test: manifests generate fmt vet $(ENVTEST) ## Run tests.
+test: manifests generate $(ENVTEST) ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use 1.23 -p path)" go test ./... -coverprofile cover.out

@@ -1,0 +1,155 @@
+run:
+  deadline: 10m
+  go: '1.17'
+  timeout: 10m
+
+  # Which dirs to skip: issues from them won't be reported.
+  # Can use regexp here: `generated.*`, regexp is applied on full path.
+  # Default value is empty list, but these defaults are additionally skipped:
+  # - vendor$, third_party$, testdata$, examples$, Godeps$, builtin$
+  # "/" will be replaced by current OS file path separator to properly work on Windows.
+  skip-dirs:
+    - genfiles$
+    - vbh$
+
+linters:
+  enable-all: true
+  disable:
+    - bodyclose
+    - cyclop
+    - depguard
+    - dupl
+    - funlen
+    - exhaustruct
+    - exhaustivestruct
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocyclo
+    - godot
+    - goerr113
+    - golint  # deprecated; replaced by revive
+    - gomnd
+    - gomoddirectives
+    - gosec
+    - ifshort
+    - interfacer
+    - maligned
+    - nakedret
+    - nestif
+    - paralleltest
+    - prealloc
+    - scopelint
+    - testpackage
+    - wrapcheck
+  fast: false
+
+linters-settings:
+  gci:
+    sections:
+      # organize imports into 3 sections, separated by newlines
+      - standard
+      - default
+      - prefix(open-cluster-management.io/governance-policy-nucleus)
+  misspell:
+    # Correct spellings using locale preferences for US or UK.
+    # Default is to use a neutral variety of English.
+    # Setting locale to US will correct the British spelling of 'colour' to 'color'.
+    locale: US
+    ignore-words:
+      - cancelled
+  lll:
+    # max line length, lines longer will be reported. Default is 120.
+    # '\t' is counted as 1 character by default, and can be changed with the tab-width option
+    line-length: 120
+    # tab width in spaces. Default to 1.
+    tab-width: 4
+  gocritic:
+    # These are the "default" enabled and disabled tags.
+    enabled-tags:
+      - diagnostic
+      - style
+    disabled-tags:
+      - experimental
+      - opinionated
+      - performance
+    enabled-checks:
+      # diagnostic group: specifically enable some "experimental" checkers
+      - commentedOutCode
+      - nilValReturn
+      - weakCond
+      # style group: specifically enable some "opinionated" checkers
+      - boolExprSimplify
+      - builtinShadow
+      - commentedOutImport
+      - docStub
+      - emptyFallthrough
+      - hexLiteral
+      - initClause
+      - methodExprCall
+      - octalLiteral
+      - typeAssertChain
+      - typeUnparen
+      - unnecessaryBlock
+      # performance group: specifically enable any we want
+      - appendCombine
+      - equalFold
+      - indexAlloc
+      - rangeExprCopy
+      - stringXbytes
+    disabled-checks:
+      # diagnostic group
+      - appendAssign
+      - exitAfterDefer
+      # style group
+      - commentFormatting
+      - ifElseChain
+      - singleCaseSwitch
+      - wrapperFunc
+
+issues:
+  # List of regexps of issue texts to exclude, empty list by default.
+  # But independently from this option we use default exclude patterns,
+  # it can be disabled by `exclude-use-default: false`. To list all
+  # excluded by default patterns execute `golangci-lint run --help`
+  exclude:
+    - composite literal uses unkeyed fields
+    - return statements should not be cuddled if block has more than two lines
+    - declarations should never be cuddled
+    - don't use leading k in Go names
+
+  exclude-rules:
+    # Allow dot imports in the tests.
+    - path: _test\.go$|^test/
+      linters:
+        - gci
+        - golint
+        - revive
+        - stylecheck
+      source: \. "github\.com/onsi/(gomega|ginkgo/v2)"
+    # Allow printing in the tests.
+    - path: _test\.go$|^test/
+      linters:
+        - forbidgo
+      source: fmt\.Print
+    # Don't enforce max line length for kubebuilder markers
+    - linters:
+        - lll
+      source: \/\/ ?\+kubebuilder
+    # Don't enforce max line length on comments that start with a URL
+    - linters:
+        - lll
+      source: \/\/ ?https?:\/\/
+
+  # Independently from option `exclude` we use default exclude patterns,
+  # it can be disabled by this option. To list all
+  # excluded by default patterns execute `golangci-lint run --help`.
+  # Default value for this option is true.
+  exclude-use-default: true
+
+  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
+  max-per-linter: 0
+
+  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
+  max-same-issues: 0
