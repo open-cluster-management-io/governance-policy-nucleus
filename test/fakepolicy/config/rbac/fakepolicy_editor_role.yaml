@@ -1,0 +1,24 @@
+# permissions for end users to edit fakepolicies.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fakepolicy-editor-role
+rules:
+- apiGroups:
+  - policy.open-cluster-management.io
+  resources:
+  - fakepolicies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - policy.open-cluster-management.io
+  resources:
+  - fakepolicies/status
+  verbs:
+  - get

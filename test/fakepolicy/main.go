@@ -12,6 +12,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	policyv1beta1 "open-cluster-management.io/governance-policy-nucleus/test/fakepolicy/api/v1beta1"
+	"open-cluster-management.io/governance-policy-nucleus/test/fakepolicy/controllers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -20,11 +23,10 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
-//nolint:wsl
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
 	//+kubebuilder:scaffold:scheme
+	utilruntime.Must(policyv1beta1.AddToScheme(scheme))
 }
 
 //nolint:unused
@@ -65,6 +67,13 @@ func RunMain() {
 		os.Exit(1)
 	}
 
+	if err = (&controllers.FakePolicyReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "FakePolicy")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
