@@ -72,3 +72,8 @@ ENVTEST_K8S_VERSION ?= 1.26
 .PHONY: test
 test: manifests generate $(ENVTEST) ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+
+.PHONY: fuzz-test
+fuzz-test:
+	go test ./api/v1beta1 -fuzz=FuzzMatchesExcludeAll -fuzztime=20s
+	go test ./api/v1beta1 -fuzz=FuzzMatchesIncludeAll -fuzztime=20s
