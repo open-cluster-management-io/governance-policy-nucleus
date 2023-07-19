@@ -100,7 +100,7 @@ func TestMatches(t *testing.T) {
 			exc:  []NonEmptyString{},
 			want: []string{"kube-one", "kube-two", "kube-three"},
 		},
-		"exlude trailing wildcard": {
+		"exclude trailing wildcard": {
 			inc:  []NonEmptyString{"*"},
 			exc:  []NonEmptyString{"kube-*"},
 			want: []string{"foo", "bar", "baz", "boo", "default"},
@@ -110,7 +110,7 @@ func TestMatches(t *testing.T) {
 			exc:  []NonEmptyString{},
 			want: []string{"foo", "boo", "kube-two"},
 		},
-		"exlude leading wildcard": {
+		"exclude leading wildcard": {
 			inc:  []NonEmptyString{"*"},
 			exc:  []NonEmptyString{"*o"},
 			want: []string{"bar", "baz", "default", "kube-one", "kube-three"},
