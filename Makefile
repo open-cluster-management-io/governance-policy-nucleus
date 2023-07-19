@@ -42,7 +42,7 @@ $(KUSTOMIZE): $(LOCAL_BIN)
 
 GOLANGCI ?= $(LOCAL_BIN)/golangci-lint
 $(GOLANGCI): $(LOCAL_BIN)
-	$(call go-install,github.com/golangci/golangci-lint/cmd/golangci-lint@v1.46.2)
+	$(call go-install,github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2)
 
 .PHONY: manifests
 manifests: $(CONTROLLER_GEN) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
@@ -68,7 +68,7 @@ lint: $(GOLANGCI)
 	$(GOLANGCI) run
 	yamllint .
 
-# ENVTEST_K8S_VERSION = 1.23
+ENVTEST_K8S_VERSION ?= 1.26
 .PHONY: test
 test: manifests generate $(ENVTEST) ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use 1.23 -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
