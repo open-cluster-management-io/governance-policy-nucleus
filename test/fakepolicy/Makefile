@@ -1,5 +1,4 @@
-LOCAL_BIN ?= $(PWD)/../../bin
-GOPATH_DEFAULT ?= $(PWD)/../../.go
+ROOTDIR ?= $(realpath $(CURDIR)/../..)
 
 include ../../Makefile
 

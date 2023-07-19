@@ -1,12 +1,12 @@
-PWD := $(shell pwd)
+ROOTDIR ?= $(CURDIR)
 
 ## Location to install dependencies to
-LOCAL_BIN ?= $(PWD)/bin
+LOCAL_BIN ?= $(ROOTDIR)/bin
 $(LOCAL_BIN):
 	mkdir -p $(LOCAL_BIN)
 
 # Keep an existing GOPATH, make a private one if it is undefined
-GOPATH_DEFAULT := $(PWD)/.go
+GOPATH_DEFAULT := $(ROOTDIR)/.go
 export GOPATH ?= $(GOPATH_DEFAULT)
 GOBIN_DEFAULT := $(GOPATH)/bin
 export GOBIN ?= $(GOBIN_DEFAULT)
@@ -46,7 +46,11 @@ $(GOLANGCI): $(LOCAL_BIN)
 
 .PHONY: manifests
 manifests: $(CONTROLLER_GEN) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths=".;./api/..." \
+	  output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./test/fakepolicy/..." \
+	  output:crd:artifacts:config=test/fakepolicy/config/crd/bases \
+	  output:rbac:artifacts:config=test/fakepolicy/config/rbac
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
@@ -66,7 +70,7 @@ vet: ## Run go vet against code.
 .PHONY: lint
 lint: $(GOLANGCI)
 	$(GOLANGCI) run
-	yamllint .
+	yamllint -c $(ROOTDIR)/.yamllint.yaml .
 
 ENVTEST_K8S_VERSION ?= 1.26
 .PHONY: test

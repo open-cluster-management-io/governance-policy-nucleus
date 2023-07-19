@@ -1,0 +1,6 @@
+apiVersion: policy.open-cluster-management.io/v1beta1
+kind: FakePolicy
+metadata:
+  name: fakepolicy-sample
+# spec:
+  # TODO(user): Add fields here
