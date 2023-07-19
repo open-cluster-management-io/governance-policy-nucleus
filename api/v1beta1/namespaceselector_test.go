@@ -183,3 +183,40 @@ func TestMatches(t *testing.T) {
 		}
 	}
 }
+
+func TestMatchesErrors(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		inc []NonEmptyString
+		exc []NonEmptyString
+		// All tests here should throw an error
+	}{
+		"include is malformed": {
+			inc: []NonEmptyString{"kube-[system"},
+			exc: []NonEmptyString{},
+		},
+		"exclude is malformed": {
+			inc: []NonEmptyString{"*"},
+			exc: []NonEmptyString{"foobar["},
+		},
+		"both are malformed": {
+			inc: []NonEmptyString{"foo["},
+			exc: []NonEmptyString{"bar["},
+		},
+	}
+
+	for name, tcase := range tests {
+		sel := NamespaceSelector{Include: tcase.inc, Exclude: tcase.exc}
+
+		_, err := sel.matches(sampleNamespaces)
+		if err == nil {
+			t.Errorf("Expected an error in test '%v', but got nil", name)
+		}
+
+		if !errors.Is(err, filepath.ErrBadPattern) {
+			t.Errorf("Error mismatch in test '%v', got '%v' wanted filepath.ErrBadPattern",
+				name, err)
+		}
+	}
+}
