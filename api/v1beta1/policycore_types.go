@@ -1,9 +1,10 @@
 // Copyright Contributors to the Open Cluster Management project
 
-// Package v1beta1 contains API Schema definitions for the policy v1beta1 API group
 //+kubebuilder:object:generate=true
 //+groupName=policy.open-cluster-management.io
 //+kubebuilder:validation:Optional
+
+// Package v1beta1 contains API Schema definitions for the policy v1beta1 API group
 package v1beta1
 
 import (
@@ -36,9 +37,11 @@ type PolicyCoreSpec struct {
 }
 
 //+kubebuilder:validation:Enum=low;Low;medium;Medium;high;High;critical;Critical
+
 type Severity string
 
 //+kubebuilder:validation:Enum=Inform;inform;Enforce;enforce
+
 type RemediationAction string
 
 // IsEnforce is true when the policy controller can attempt to enforce the
@@ -67,6 +70,7 @@ type NamespaceSelector struct {
 }
 
 //+kubebuilder:validation:MinLength=1
+
 type NonEmptyString string
 
 // PolicyCoreStatus defines fields that policies should implement as part of
@@ -78,6 +82,7 @@ type PolicyCoreStatus struct {
 }
 
 //+kubebuilder:validation:Enum=Compliant;NonCompliant;UnknownCompliancy
+
 type ComplianceState string
 
 const (

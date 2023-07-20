@@ -32,7 +32,7 @@ func (sel NamespaceSelector) GetNamespaces(ctx context.Context, r client.Reader)
 }
 
 // matches filters a slice of strings, and returns ones that match the selector.
-// The only possible returned error is filepath.ErrBadPattern.
+// The only possible returned error is a wrapped filepath.ErrBadPattern.
 func (sel NamespaceSelector) matches(namespaces []string) ([]string, error) {
 	// Using a map to ensure each entry in the result is unique.
 	set := make(map[string]struct{})
