@@ -165,6 +165,13 @@ func TestMatches(t *testing.T) {
 			exc:  []NonEmptyString{"[fb]oo"},
 			want: []string{"bar", "baz", "default", "kube-one", "kube-two", "kube-three"},
 		},
+		// Note that if the NamespaceSelector is empty, it should return no namespaces, but that
+		// is handled separately from this `matches` function
+		"include and exclude are both empty": {
+			inc:  []NonEmptyString{},
+			exc:  []NonEmptyString{},
+			want: sampleNamespaces,
+		},
 	}
 
 	for name, tcase := range tests {

@@ -16,8 +16,6 @@ import (
 	policyv1beta1 "open-cluster-management.io/governance-policy-nucleus/test/fakepolicy/api/v1beta1"
 )
 
-// Most tests of the NamespaceSelector should be done in unit tests. These are
-// just some additional sanity checks.
 var _ = Describe("FakePolicy NamespaceSelection", Ordered, func() {
 	defaultNamespaces := []string{"default", "kube-node-lease", "kube-public", "kube-system"}
 	sampleNamespaces := []string{"foo", "goo", "fake", "faze", "kube-one"}
@@ -74,7 +72,6 @@ var _ = Describe("FakePolicy NamespaceSelection", Ordered, func() {
 			Eventually(func(g Gomega) {
 				foundPolicy := policyv1beta1.FakePolicy{}
 				g.Expect(k8sClient.Get(context.TODO(), nn, &foundPolicy)).To(Succeed())
-
 				g.Expect(foundPolicy.Status.SelectionComplete).To(BeTrue())
 				g.Expect(foundPolicy.Status.SelectedNamespaces).To(ConsistOf(desiredMatches))
 				g.Expect(foundPolicy.Status.SelectionError).To(Equal(selErr))
@@ -82,6 +79,8 @@ var _ = Describe("FakePolicy NamespaceSelection", Ordered, func() {
 		},
 
 		// Basic testing of includes and excludes
+		Entry("empty should match no namespaces", nucleusv1beta1.NamespaceSelector{},
+			[]string{}, ""),
 		Entry("include all with *", nucleusv1beta1.NamespaceSelector{
 			Include: []nucleusv1beta1.NonEmptyString{"*"},
 		}, allNamespaces, ""),

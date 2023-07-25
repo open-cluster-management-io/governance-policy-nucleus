@@ -38,7 +38,7 @@ spec:
               is for controllers to embed this struct in their *Spec definitions.
             properties:
               namespaceSelector:
-                description: NamepaceSelector indicates which namespaces on the cluster
+                description: NamespaceSelector indicates which namespaces on the cluster
                   this policy should apply to, when the policy applies to namespaced
                   objects.
                 properties:

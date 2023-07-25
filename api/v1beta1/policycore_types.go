@@ -31,7 +31,7 @@ type PolicyCoreSpec struct {
 	// remediate a policy, even when set to "enforce".
 	RemediationAction RemediationAction `json:"remediationAction,omitempty"`
 
-	// NamepaceSelector indicates which namespaces on the cluster this policy
+	// NamespaceSelector indicates which namespaces on the cluster this policy
 	// should apply to, when the policy applies to namespaced objects.
 	NamespaceSelector NamespaceSelector `json:"namespaceSelector,omitempty"`
 }
