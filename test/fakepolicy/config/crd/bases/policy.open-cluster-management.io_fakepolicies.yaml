@@ -36,7 +36,7 @@ spec:
             description: FakePolicySpec defines the desired state of FakePolicy
             properties:
               namespaceSelector:
-                description: NamepaceSelector indicates which namespaces on the cluster
+                description: NamespaceSelector indicates which namespaces on the cluster
                   this policy should apply to, when the policy applies to namespaced
                   objects.
                 properties:

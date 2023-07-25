@@ -18,6 +18,11 @@ import (
 func (sel NamespaceSelector) GetNamespaces(ctx context.Context, r client.Reader) ([]string, error) {
 	matchingNamespaces := make([]string, 0)
 
+	if len(sel.Include) == 0 {
+		// A somewhat special case of no matches.
+		return matchingNamespaces, nil
+	}
+
 	namespaceList := &corev1.NamespaceList{}
 	if err := r.List(ctx, namespaceList); err != nil {
 		return matchingNamespaces, err
@@ -38,7 +43,7 @@ func (sel NamespaceSelector) matches(namespaces []string) ([]string, error) {
 	set := make(map[string]struct{})
 
 	for _, namespace := range namespaces {
-		include := false
+		include := len(sel.Include) == 0 // include everything if empty/unset
 
 		for _, includePattern := range sel.Include {
 			var err error
