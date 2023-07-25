@@ -4,24 +4,29 @@ package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+	nucleusv1beta1 "open-cluster-management.io/governance-policy-nucleus/api/v1beta1"
+)
 
 // FakePolicySpec defines the desired state of FakePolicy
 type FakePolicySpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of FakePolicy. Edit fakepolicy_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	nucleusv1beta1.PolicyCoreSpec `json:",inline"`
 }
+
+//+kubebuilder:validation:Optional
 
 // FakePolicyStatus defines the observed state of FakePolicy
 type FakePolicyStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	nucleusv1beta1.PolicyCoreStatus `json:",inline"`
+
+	// SelectedNamespaces stores the list of namespaces the policy applies to
+	SelectedNamespaces []string `json:"selectedNamespaces"`
+
+	// SelectionComplete stores whether the selection has been completed
+	SelectionComplete bool `json:"selectionComplete"`
+
+	// SelectionError stores the error from the selection, if one occurred
+	SelectionError string `json:"selectionError"`
 }
 
 //+kubebuilder:object:root=true

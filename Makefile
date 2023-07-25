@@ -75,7 +75,8 @@ lint: $(GOLANGCI)
 ENVTEST_K8S_VERSION ?= 1.26
 .PHONY: test
 test: manifests generate $(ENVTEST) ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... \
+	  -coverpkg=./... -covermode=set -coverprofile=cover.out
 
 .PHONY: fuzz-test
 fuzz-test:

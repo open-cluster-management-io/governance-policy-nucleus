@@ -5,6 +5,7 @@ package controllers
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,23 +20,47 @@ type FakePolicyReconciler struct {
 	Scheme *runtime.Scheme
 }
 
+// Usual RBAC for fakepolicy:
 //+kubebuilder:rbac:groups=policy.open-cluster-management.io,resources=fakepolicies,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=policy.open-cluster-management.io,resources=fakepolicies/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=policy.open-cluster-management.io,resources=fakepolicies/finalizers,verbs=update
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// FUTURE(user): Modify the Reconcile function to compare the state specified by
-// the FakePolicy object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
-func (r *FakePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+// Nucleus RBAC for namespaceSelector:
+//+kubebuilder:rbac:groups=core,resources=namespaces,verbs=get;list;watch
 
-	// FUTURE(user): your logic here
+func (r *FakePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := log.FromContext(ctx)
+
+	policy := &policyv1beta1.FakePolicy{}
+	if err := r.Get(ctx, req.NamespacedName, policy); err != nil {
+		if errors.IsNotFound(err) {
+			// Request object not found, probably deleted
+			return ctrl.Result{}, nil
+		}
+
+		log.Error(err, "Failed to get FakePolicy")
+
+		return ctrl.Result{}, err
+	}
+
+	selectedNamespaces, err := policy.Spec.NamespaceSelector.GetNamespaces(ctx, r.Client)
+	if err != nil {
+		log.Error(err, "Failed to GetNamespaces using NamespaceSelector",
+			"selector", policy.Spec.NamespaceSelector)
+
+		policy.Status.SelectionError = err.Error()
+	} else {
+		policy.Status.SelectionError = ""
+	}
+
+	policy.Status.SelectedNamespaces = selectedNamespaces
+	policy.Status.SelectionComplete = true
+
+	if err := r.Status().Update(ctx, policy); err != nil {
+		log.Error(err, "Failed to update status")
+
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }
