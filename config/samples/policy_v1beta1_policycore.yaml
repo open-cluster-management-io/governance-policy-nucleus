@@ -3,5 +3,8 @@ kind: PolicyCore
 metadata:
   name: policycore-sample
 spec:
-  foo: hello world
-  # TODO(user): Add fields here
+  severity: low
+  remediationAction: inform
+  namespaceSelector:
+    include: ["*"]
+    exclude: ["kube-*"]
