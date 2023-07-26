@@ -1,0 +1,380 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    control-plane: controller-manager
+    policy-controller: fakepolicy
+  name: fakepolicy-system
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.8.0
+  creationTimestamp: null
+  labels:
+    policy-controller: fakepolicy
+  name: fakepolicies.policy.open-cluster-management.io
+spec:
+  group: policy.open-cluster-management.io
+  names:
+    kind: FakePolicy
+    listKind: FakePolicyList
+    plural: fakepolicies
+    singular: fakepolicy
+  scope: Namespaced
+  versions:
+  - name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: FakePolicy is the Schema for the fakepolicies API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: FakePolicySpec defines the desired state of FakePolicy
+            properties:
+              namespaceSelector:
+                description: NamespaceSelector indicates which namespaces on the cluster
+                  this policy should apply to, when the policy applies to namespaced
+                  objects.
+                properties:
+                  exclude:
+                    description: Exclude is a list of namespaces the policy should
+                      _not_ apply to.
+                    items:
+                      minLength: 1
+                      type: string
+                    type: array
+                  include:
+                    description: Include is a list of namespaces the policy should
+                      apply to.
+                    items:
+                      minLength: 1
+                      type: string
+                    type: array
+                type: object
+              remediationAction:
+                description: RemediationAction indicates what the policy controller
+                  should do when the policy is not compliant. Accepted values include
+                  inform, and enforce. Note that not all policy controllers will attempt
+                  to automatically remediate a policy, even when set to "enforce".
+                enum:
+                - Inform
+                - inform
+                - Enforce
+                - enforce
+                type: string
+              severity:
+                description: 'Severity defines how serious the situation is when the
+                  policy is not compliant. The severity should not change the behavior
+                  of the policy, but may be read and used by other tools. Accepted
+                  values include: low, medium, high, and critical.'
+                enum:
+                - low
+                - Low
+                - medium
+                - Medium
+                - high
+                - High
+                - critical
+                - Critical
+                type: string
+            type: object
+          status:
+            description: FakePolicyStatus defines the observed state of FakePolicy
+            properties:
+              compliant:
+                description: 'ComplianceState indicates whether the policy is compliant
+                  or not. Accepted values include: Compliant, NonCompliant, and UnknownCompliancy'
+                enum:
+                - Compliant
+                - NonCompliant
+                - UnknownCompliancy
+                type: string
+              selectedNamespaces:
+                description: SelectedNamespaces stores the list of namespaces the
+                  policy applies to
+                items:
+                  type: string
+                type: array
+              selectionComplete:
+                description: SelectionComplete stores whether the selection has been
+                  completed
+                type: boolean
+              selectionError:
+                description: SelectionError stores the error from the selection, if
+                  one occurred
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    policy-controller: fakepolicy
+  name: fakepolicy-controller-manager
+  namespace: fakepolicy-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    policy-controller: fakepolicy
+  name: fakepolicy-leader-election-role
+  namespace: fakepolicy-system
+rules:
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  labels:
+    policy-controller: fakepolicy
+  name: fakepolicy-manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - policy.open-cluster-management.io
+  resources:
+  - fakepolicies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - policy.open-cluster-management.io
+  resources:
+  - fakepolicies/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - policy.open-cluster-management.io
+  resources:
+  - fakepolicies/status
+  verbs:
+  - get
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    policy-controller: fakepolicy
+  name: fakepolicy-metrics-reader
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    policy-controller: fakepolicy
+  name: fakepolicy-proxy-role
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    policy-controller: fakepolicy
+  name: fakepolicy-leader-election-rolebinding
+  namespace: fakepolicy-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: fakepolicy-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: fakepolicy-controller-manager
+  namespace: fakepolicy-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    policy-controller: fakepolicy
+  name: fakepolicy-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fakepolicy-manager-role
+subjects:
+- kind: ServiceAccount
+  name: fakepolicy-controller-manager
+  namespace: fakepolicy-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    policy-controller: fakepolicy
+  name: fakepolicy-proxy-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fakepolicy-proxy-role
+subjects:
+- kind: ServiceAccount
+  name: fakepolicy-controller-manager
+  namespace: fakepolicy-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    control-plane: controller-manager
+    policy-controller: fakepolicy
+  name: fakepolicy-controller-manager-metrics-service
+  namespace: fakepolicy-system
+spec:
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: https
+  selector:
+    control-plane: controller-manager
+    policy-controller: fakepolicy
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    control-plane: controller-manager
+    policy-controller: fakepolicy
+  name: fakepolicy-controller-manager
+  namespace: fakepolicy-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      control-plane: controller-manager
+      policy-controller: fakepolicy
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        control-plane: controller-manager
+        policy-controller: fakepolicy
+    spec:
+      containers:
+      - args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=0
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.11.0
+        name: kube-rbac-proxy
+        ports:
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 5m
+            memory: 64Mi
+      - args:
+        - --health-probe-bind-address=:8081
+        - --metrics-bind-address=127.0.0.1:8080
+        - --leader-elect
+        command:
+        - /manager
+        image: controller:latest
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: fakepolicy-controller-manager
+      terminationGracePeriodSeconds: 10
