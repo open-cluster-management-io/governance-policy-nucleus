@@ -1,6 +1,6 @@
 // Copyright Contributors to the Open Cluster Management project
 
-package controllers
+package test
 
 import (
 	"context"
