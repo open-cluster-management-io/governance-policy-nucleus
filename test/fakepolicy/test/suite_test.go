@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	policyv1beta1 "open-cluster-management.io/governance-policy-nucleus/test/fakepolicy/api/v1beta1"
+	"open-cluster-management.io/governance-policy-nucleus/test/fakepolicy/controllers"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -70,7 +71,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&FakePolicyReconciler{
+	err = (&controllers.FakePolicyReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)
