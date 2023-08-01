@@ -3,31 +3,16 @@
 package test
 
 import (
-	"context"
-	"embed"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/yaml"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	policyv1beta1 "open-cluster-management.io/governance-policy-nucleus/test/fakepolicy/api/v1beta1"
 )
 
-var _ = Describe("FakePolicy CRD Validation", Ordered, func() {
-	AfterEach(func() {
-		By("Deleting any FakePolicies in the default namespace")
-		fakePolicy := &policyv1beta1.FakePolicy{}
-		Expect(k8sClient.DeleteAllOf(context.TODO(), fakePolicy, &client.DeleteAllOfOptions{
-			ListOptions: client.ListOptions{Namespace: "default"},
-		})).Should(Succeed())
-	})
-
+var _ = Describe("FakePolicy CRD Validation", func() {
 	DescribeTable("Validating spec inputs",
 		func(severity, remediationAction string, include, exclude []string, isValid bool) {
-			policy, nn := fromTestdata("fakepolicy-sample.yaml")
+			policy := fromTestdata("fakepolicy-sample.yaml")
 
 			Expect(unstructured.SetNestedField(policy.Object,
 				severity, "spec", "severity")).To(Succeed())
@@ -38,15 +23,11 @@ var _ = Describe("FakePolicy CRD Validation", Ordered, func() {
 			Expect(unstructured.SetNestedStringSlice(policy.Object,
 				exclude, "spec", "namespaceSelector", "exclude")).To(Succeed())
 
-			matchExpected := Succeed
-			if !isValid {
-				matchExpected = HaveOccurred
+			if isValid {
+				Expect(cleanlyCreate(&policy)).To(Succeed())
+			} else if !errors.IsInvalid(cleanlyCreate(&policy)) {
+				Fail("Expected creating the policy to fail with an 'invalid' error")
 			}
-
-			Expect(k8sClient.Create(context.TODO(), policy)).Should(matchExpected())
-
-			foundPolicy := &policyv1beta1.FakePolicy{}
-			Expect(k8sClient.Get(context.TODO(), nn, foundPolicy)).Should(matchExpected())
 		},
 		// Test severity options
 		Entry("severity=low", "low", "inform", []string{"*"}, []string{"kube-*"}, true),
@@ -73,24 +54,3 @@ var _ = Describe("FakePolicy CRD Validation", Ordered, func() {
 		Entry("empty list in namespaceSelector.exclude", "low", "inform", []string{"*"}, []string{}, true),
 	)
 })
-
-//go:embed testdata/*
-var testfiles embed.FS
-
-// Unmarshals the given YAML file in testdata/ into an unstructured.Unstructured,
-// and additionally returns a NamespacedName for easier lookup later.
-func fromTestdata(name string) (*unstructured.Unstructured, types.NamespacedName) {
-	objYAML, err := testfiles.ReadFile("testdata/" + name)
-	Expect(err).ToNot(HaveOccurred())
-
-	m := make(map[string]interface{})
-	Expect(yaml.UnmarshalStrict(objYAML, &m)).To(Succeed())
-
-	unstruct := &unstructured.Unstructured{Object: m}
-	nn := types.NamespacedName{
-		Namespace: unstruct.GetNamespace(),
-		Name:      unstruct.GetName(),
-	}
-
-	return unstruct, nn
-}

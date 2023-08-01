@@ -44,6 +44,10 @@ GOLANGCI ?= $(LOCAL_BIN)/golangci-lint
 $(GOLANGCI): $(LOCAL_BIN)
 	$(call go-install,github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2)
 
+GINKGO ?= $(LOCAL_BIN)/ginkgo
+$(GINKGO): $(LOCAL_BIN)
+	$(call go-install,github.com/onsi/ginkgo/v2/ginkgo@$(shell awk '/github.com\/onsi\/ginkgo\/v2/ {print $$2}' go.mod))
+
 .PHONY: manifests
 manifests: $(CONTROLLER_GEN) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths=".;./api/..." \
@@ -74,9 +78,9 @@ lint: $(GOLANGCI)
 
 ENVTEST_K8S_VERSION ?= 1.26
 .PHONY: test
-test: manifests generate $(ENVTEST) ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... \
-	  -coverpkg=./... -covermode=set -coverprofile=cover.out
+test: manifests generate $(GINKGO) $(ENVTEST) ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" $(GINKGO) \
+	  --coverpkg=./... --covermode=count --coverprofile=cover.out ./...
 
 .PHONY: fuzz-test
 fuzz-test:
