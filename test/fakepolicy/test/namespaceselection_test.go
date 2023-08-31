@@ -20,7 +20,10 @@ var _ = Describe("FakePolicy NamespaceSelection", Ordered, func() {
 	BeforeAll(func() {
 		By("Creating sample namespaces")
 		for _, ns := range sampleNamespaces {
-			nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: ns}}
+			nsObj := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{
+				Name:   ns,
+				Labels: map[string]string{"sample": ns},
+			}}
 			Expect(cleanlyCreate(nsObj)).To(Succeed())
 		}
 
@@ -55,8 +58,6 @@ var _ = Describe("FakePolicy NamespaceSelection", Ordered, func() {
 		},
 
 		// Basic testing of includes and excludes
-		Entry("empty should match no namespaces", nucleusv1beta1.NamespaceSelector{},
-			[]string{}, ""),
 		Entry("include all with *", nucleusv1beta1.NamespaceSelector{
 			Include: []nucleusv1beta1.NonEmptyString{"*"},
 		}, allNamespaces, ""),
@@ -73,5 +74,131 @@ var _ = Describe("FakePolicy NamespaceSelection", Ordered, func() {
 		Entry("error if an include entry is malformed", nucleusv1beta1.NamespaceSelector{
 			Include: []nucleusv1beta1.NonEmptyString{"kube-[system"},
 		}, []string{}, "error parsing 'include' pattern 'kube-[system': syntax error in pattern"),
+
+		// Testing with label selector
+		Entry("select by a label existing", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: &metav1.LabelSelector{
+				MatchExpressions: []metav1.LabelSelectorRequirement{{
+					Key:      "sample",
+					Operator: metav1.LabelSelectorOpExists,
+				}},
+			},
+		}, sampleNamespaces, ""),
+		Entry("select by a label matching a specific value", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"sample": "foo",
+				},
+			},
+		}, []string{"foo"}, ""),
+		Entry("select using a label and an expression", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"kubernetes.io/metadata.name": "default",
+				},
+				MatchExpressions: []metav1.LabelSelectorRequirement{{
+					Key:      "sample",
+					Operator: metav1.LabelSelectorOpDoesNotExist,
+				}},
+			},
+		}, []string{"default"}, ""),
+		Entry("include a subset with a label existing", nucleusv1beta1.NamespaceSelector{
+			Include: []nucleusv1beta1.NonEmptyString{"foo", "goo"},
+			LabelSelector: &metav1.LabelSelector{
+				MatchExpressions: []metav1.LabelSelectorRequirement{{
+					Key:      "sample",
+					Operator: metav1.LabelSelectorOpExists,
+				}},
+			},
+		}, []string{"foo", "goo"}, ""),
+		Entry("exclude a subset with a label existing", nucleusv1beta1.NamespaceSelector{
+			Exclude: []nucleusv1beta1.NonEmptyString{"f*"},
+			LabelSelector: &metav1.LabelSelector{
+				MatchExpressions: []metav1.LabelSelectorRequirement{{
+					Key:      "sample",
+					Operator: metav1.LabelSelectorOpExists,
+				}},
+			},
+		}, []string{"goo", "kube-one"}, ""),
+		Entry("error if the LabelSelector is malformed", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: &metav1.LabelSelector{
+				MatchExpressions: []metav1.LabelSelectorRequirement{{
+					Key:      "sample",
+					Operator: metav1.LabelSelectorOpExists,
+					Values:   []string{"foo"},
+				}},
+			},
+		}, []string{}, "values: Invalid value: []string{\"foo\"}: "+
+			"values set must be empty for exists and does not exist"),
+
+		// Various flavors of "nil" - when left unset, or specifically set to nil
+		Entry("all nil fields", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: &metav1.LabelSelector{
+				MatchLabels:      nil,
+				MatchExpressions: nil,
+			},
+			Include: nil,
+			Exclude: nil,
+		}, []string{}, ""),
+		Entry("empty LabelSelector", nucleusv1beta1.NamespaceSelector{
+			// because of go's zero values, this is exactly the same as 'all nil fields'
+			LabelSelector: &metav1.LabelSelector{},
+			Include:       nil,
+			Exclude:       nil,
+		}, []string{}, ""),
+		Entry("include, exclude, and selector all nil", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: nil,
+			Include:       nil,
+			Exclude:       nil,
+		}, []string{}, ""),
+		Entry("empty Target", nucleusv1beta1.NamespaceSelector{}, []string{}, ""),
+
+		// When the LabelSelector is specified, it should be used
+		Entry("all empty initialized fields in the Target", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: &metav1.LabelSelector{
+				MatchLabels:      map[string]string{},
+				MatchExpressions: []metav1.LabelSelectorRequirement{},
+			},
+			Include: []nucleusv1beta1.NonEmptyString{},
+			Exclude: []nucleusv1beta1.NonEmptyString{},
+		}, allNamespaces, ""),
+		Entry("specified empty MatchLabels", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{},
+			},
+			Include: []nucleusv1beta1.NonEmptyString{},
+			Exclude: []nucleusv1beta1.NonEmptyString{},
+		}, allNamespaces, ""),
+		Entry("specified empty MatchExpressions", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: &metav1.LabelSelector{
+				MatchExpressions: []metav1.LabelSelectorRequirement{},
+			},
+			Include: []nucleusv1beta1.NonEmptyString{},
+			Exclude: []nucleusv1beta1.NonEmptyString{},
+		}, allNamespaces, ""),
+
+		// Interactions between the various kinds of "empty" LabelSelector and Include.
+		Entry("nil fields in the LabelSelector", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: &metav1.LabelSelector{
+				MatchLabels:      nil,
+				MatchExpressions: nil,
+			},
+			Include: []nucleusv1beta1.NonEmptyString{"foo"},
+		}, []string{"foo"}, ""),
+		Entry("empty LabelSelector", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: &metav1.LabelSelector{},
+			Include:       []nucleusv1beta1.NonEmptyString{"foo"},
+		}, []string{"foo"}, ""),
+		Entry("nil LabelSelector", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: nil,
+			Include:       []nucleusv1beta1.NonEmptyString{"foo"},
+		}, []string{"foo"}, ""),
+		Entry("initialized empty fields inside the LabelSelector", nucleusv1beta1.NamespaceSelector{
+			LabelSelector: &metav1.LabelSelector{
+				MatchLabels:      map[string]string{},
+				MatchExpressions: []metav1.LabelSelectorRequirement{},
+			},
+			Include: []nucleusv1beta1.NonEmptyString{"foo"},
+		}, []string{"foo"}, ""),
 	)
 })

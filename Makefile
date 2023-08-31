@@ -49,12 +49,13 @@ $(GINKGO): $(LOCAL_BIN)
 	$(call go-install,github.com/onsi/ginkgo/v2/ginkgo@$(shell awk '/github.com\/onsi\/ginkgo\/v2/ {print $$2}' go.mod))
 
 .PHONY: manifests
-manifests: $(CONTROLLER_GEN) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+manifests: $(CONTROLLER_GEN) $(KUSTOMIZE) ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths=".;./api/..." \
 	  output:crd:artifacts:config=config/crd/bases
 	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./test/fakepolicy/..." \
 	  output:crd:artifacts:config=test/fakepolicy/config/crd/bases \
 	  output:rbac:artifacts:config=test/fakepolicy/config/rbac
+	$(KUSTOMIZE) build ./test/fakepolicy/config/default > ./test/fakepolicy/config/deploy.yaml
 
 .PHONY: generate
 generate: $(CONTROLLER_GEN) ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
