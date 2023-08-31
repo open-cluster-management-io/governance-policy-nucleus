@@ -1,0 +1,14 @@
+apiVersion: policy.open-cluster-management.io/v1beta1
+kind: FakePolicy
+metadata:
+  name: fakepolicy-sample
+  namespace: default
+spec:
+  severity: low
+  remediationAction: inform
+  namespaceSelector:
+    matchExpressions:
+      - key: sample
+        operator: Exists
+    include: ["*"]
+    exclude: ["kube-*"]
