@@ -12,77 +12,77 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-var sampleNamespaces = []string{
+var sampleNames = []string{
 	"foo", "bar", "baz", "boo", "default", "kube-one", "kube-two", "kube-three",
 }
 
-// Fuzz test to verify that excluding "*" always matches 0 namespaces. The
-// `Include` list and the input namespaces are both fuzzed.
+// Fuzz test to verify that excluding "*" always matches 0 names. The
+// `Include` list and the input names are both fuzzed.
 func FuzzMatchesExcludeAll(f *testing.F) {
 	for _, tc := range []string{"", "*", "?", "foo", "quux"} {
 		f.Add(tc, tc, tc)
 	}
 
-	f.Fuzz(func(t *testing.T, inc1, inc2, extraNS string) {
-		errs := validation.IsDNS1123Label(extraNS)
-		if len(errs) != 0 { // K8s Namespaces must be valid RFC 1123 DNS labels.
+	f.Fuzz(func(t *testing.T, inc1, inc2, extraName string) {
+		errs := validation.IsDNS1123Subdomain(extraName)
+		if len(errs) != 0 { // K8s Names are usually required to be valid RFC 1123 DNS subdomains.
 			t.Skip()
 		}
 
 		inc := []NonEmptyString{NonEmptyString(inc1), NonEmptyString(inc2)}
-		sel := NamespaceSelector{Include: inc, Exclude: []NonEmptyString{"*"}}
+		sel := Target{Include: inc, Exclude: []NonEmptyString{"*"}}
 
-		got, err := sel.matches(append(sampleNamespaces, extraNS))
+		got, err := sel.matches(append(sampleNames, extraName))
 		if err != nil {
 			if errors.Is(err, filepath.ErrBadPattern) {
 				t.Skip()
 			}
 			t.Errorf("Unexpected error '%v' when including '%v' and '%v', with ns '%v'",
-				err, inc1, inc2, extraNS)
+				err, inc1, inc2, extraName)
 		}
 		if len(got) != 0 {
 			t.Errorf("Got non-empty matches '%v', when including '%v' and '%v', with ns '%v'",
-				got, inc1, inc2, extraNS)
+				got, inc1, inc2, extraName)
 		}
 	})
 }
 
-// Fuzz test to verify that including "*" will always match all namespaces when
+// Fuzz test to verify that including "*" will always match all names when
 // excludes is empty. Additional items in the `Include` list and the input
-// namespaces are both fuzzed.
+// names are both fuzzed.
 func FuzzMatchesIncludeAll(f *testing.F) {
 	for _, tc := range []string{"", "*", "?", "foo", "quux"} {
 		f.Add(tc, tc, tc)
 	}
 
-	f.Fuzz(func(t *testing.T, inc1, inc2, extraNS string) {
-		errs := validation.IsDNS1123Label(extraNS)
-		if len(errs) != 0 { // K8s Namespaces must be valid RFC 1123 DNS labels.
+	f.Fuzz(func(t *testing.T, inc1, inc2, extraName string) {
+		errs := validation.IsDNS1123Subdomain(extraName)
+		if len(errs) != 0 { // K8s Names are usually required to be valid RFC 1123 DNS subdomains.
 			t.Skip()
 		}
 
 		inc := []NonEmptyString{"*", NonEmptyString(inc1), NonEmptyString(inc2)}
-		sel := NamespaceSelector{Include: inc, Exclude: []NonEmptyString{}}
+		sel := Target{Include: inc, Exclude: []NonEmptyString{}}
 
-		got, err := sel.matches(append(sampleNamespaces, extraNS))
+		got, err := sel.matches(append(sampleNames, extraName))
 		if err != nil {
 			if errors.Is(err, filepath.ErrBadPattern) {
 				t.Skip()
 			}
 			t.Errorf("Unexpected error '%v' when including '%v' and '%v', with ns '%v'",
-				err, inc1, inc2, extraNS)
+				err, inc1, inc2, extraName)
 		}
 
-		desiredLen := len(sampleNamespaces) + 1
-		for _, ns := range sampleNamespaces {
-			if ns == extraNS {
+		desiredLen := len(sampleNames) + 1
+		for _, ns := range sampleNames {
+			if ns == extraName {
 				desiredLen--
 			}
 		}
 
 		if len(got) != desiredLen {
 			t.Errorf("Incorrect matches '%v', when including '%v' and '%v', with ns '%v'",
-				got, inc1, inc2, extraNS)
+				got, inc1, inc2, extraName)
 		}
 	})
 }
@@ -170,14 +170,14 @@ func TestMatches(t *testing.T) {
 		"include and exclude are both empty": {
 			inc:  []NonEmptyString{},
 			exc:  []NonEmptyString{},
-			want: sampleNamespaces,
+			want: sampleNames,
 		},
 	}
 
 	for name, tcase := range tests {
-		sel := NamespaceSelector{Include: tcase.inc, Exclude: tcase.exc}
+		sel := Target{Include: tcase.inc, Exclude: tcase.exc}
 
-		got, err := sel.matches(sampleNamespaces)
+		got, err := sel.matches(sampleNames)
 		if err != nil {
 			t.Errorf("Unexpected error '%v', in test '%v'", err, name)
 		}
@@ -214,9 +214,9 @@ func TestMatchesErrors(t *testing.T) {
 	}
 
 	for name, tcase := range tests {
-		sel := NamespaceSelector{Include: tcase.inc, Exclude: tcase.exc}
+		sel := Target{Include: tcase.inc, Exclude: tcase.exc}
 
-		_, err := sel.matches(sampleNamespaces)
+		_, err := sel.matches(sampleNames)
 		if err == nil {
 			t.Errorf("Expected an error in test '%v', but got nil", name)
 		}

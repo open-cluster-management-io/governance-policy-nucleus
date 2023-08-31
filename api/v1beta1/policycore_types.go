@@ -8,6 +8,8 @@
 package v1beta1
 
 import (
+	"encoding/json"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -59,14 +61,40 @@ func (ra RemediationAction) IsInform() bool {
 }
 
 type NamespaceSelector struct {
-	// FUTURE: enhance this per
-	// https://github.com/open-cluster-management-io/enhancements/tree/main/enhancements/sig-policy/62-namespace-labelselector
+	*metav1.LabelSelector `json:",inline"`
 
-	// Include is a list of namespaces the policy should apply to.
+	// Include is a list of filepath expressions for namespaces the policy should apply to.
 	Include []NonEmptyString `json:"include,omitempty"`
 
-	// Exclude is a list of namespaces the policy should _not_ apply to.
+	// Exclude is a list of filepath expressions for namespaces the policy should _not_ apply to.
 	Exclude []NonEmptyString `json:"exclude,omitempty"`
+}
+
+// MarshalJSON returns the JSON encoding of the NamespaceSelector. The LabelSelector's matchLabels
+// and matchExpressions will only be omitted from the encoding if the LabelSelector is nil; if
+// either of them have been set but are empty, then they will be included in this JSON encoding.
+func (sel NamespaceSelector) MarshalJSON() ([]byte, error) {
+	if sel.LabelSelector == nil {
+		return json.Marshal(struct {
+			Include []NonEmptyString `json:"include,omitempty"`
+			Exclude []NonEmptyString `json:"exclude,omitempty"`
+		}{
+			Include: sel.Include,
+			Exclude: sel.Exclude,
+		})
+	} else {
+		return json.Marshal(struct {
+			MatchLabels      map[string]string                 `json:"matchLabels"`
+			MatchExpressions []metav1.LabelSelectorRequirement `json:"matchExpressions"`
+			Include          []NonEmptyString                  `json:"include,omitempty"`
+			Exclude          []NonEmptyString                  `json:"exclude,omitempty"`
+		}{
+			MatchLabels:      sel.MatchLabels,
+			MatchExpressions: sel.MatchExpressions,
+			Include:          sel.Include,
+			Exclude:          sel.Exclude,
+		})
+	}
 }
 
 //+kubebuilder:validation:MinLength=1

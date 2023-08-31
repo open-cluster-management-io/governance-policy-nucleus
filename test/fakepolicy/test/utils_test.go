@@ -77,8 +77,9 @@ func sampleFakePolicy() policyv1beta1.FakePolicy {
 				Severity:          "low",
 				RemediationAction: "inform",
 				NamespaceSelector: nucleusv1beta1.NamespaceSelector{
-					Include: []nucleusv1beta1.NonEmptyString{"*"},
-					Exclude: []nucleusv1beta1.NonEmptyString{"kube-*"},
+					LabelSelector: &metav1.LabelSelector{},
+					Include:       []nucleusv1beta1.NonEmptyString{"*"},
+					Exclude:       []nucleusv1beta1.NonEmptyString{"kube-*"},
 				},
 			},
 		},
