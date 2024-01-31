@@ -42,7 +42,7 @@ $(KUSTOMIZE): $(LOCAL_BIN)
 
 GOLANGCI ?= $(LOCAL_BIN)/golangci-lint
 $(GOLANGCI): $(LOCAL_BIN)
-	$(call go-install,github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2)
+	$(call go-install,github.com/golangci/golangci-lint/cmd/golangci-lint@v1.55.2)
 
 GINKGO ?= $(LOCAL_BIN)/ginkgo
 $(GINKGO): $(LOCAL_BIN)
