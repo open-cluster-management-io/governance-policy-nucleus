@@ -17,10 +17,11 @@ jobs:
         with:
           python-version: 3.x
 
-      - run: pip install yamllint==1.26.3
+      - run: pip install yamllint==1.33.0
 
       - name: Lint YAML files
         run: yamllint .
+        # Automatically uses ./.yamllint.yaml for configuration
 
   golangci:
     name: golangci-lint
@@ -35,5 +36,5 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          version: v1.52
+          version: v1.55
           # Automatically uses ./.golangci.yml for configuration
