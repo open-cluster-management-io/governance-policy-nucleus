@@ -1,6 +1,6 @@
 module open-cluster-management.io/governance-policy-nucleus
 
-go 1.20
+go 1.21
 
 require (
 	github.com/go-logr/zapr v1.2.4
